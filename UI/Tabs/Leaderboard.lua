@@ -14,9 +14,9 @@ end
 
 -- My characters tracking (highlights all player's alts in leaderboard)
 local function GetMyCharacters()
-    VE_DB = VE_DB or {}
-    VE_DB.myCharacters = VE_DB.myCharacters or {}
-    return VE_DB.myCharacters
+    HC_DB = HC_DB or {}
+    HC_DB.myCharacters = HC_DB.myCharacters or {}
+    return HC_DB.myCharacters
 end
 
 local function RegisterCurrentCharacter()
@@ -96,7 +96,7 @@ function HC.UI.Tabs:CreateLeaderboard(parent)
     end)
 
     -- Update timestamp when activity log refreshes
-    HC.EventBus:Register("VE_ACTIVITY_LOG_UPDATED", function()
+    HC.EventBus:Register("HC_ACTIVITY_LOG_UPDATED", function()
         lastUpdateText:SetText(date("%H:%M"))
     end)
 
@@ -167,7 +167,7 @@ function HC.UI.Tabs:CreateLeaderboard(parent)
         if state.config.debug then
             print("|cFF2aa198[VE Leaderboard]|r Grouping mode changed to:", newMode)
         end
-        HC.EventBus:Trigger("VE_GROUPING_MODE_CHANGED")  -- Sync with config checkbox
+        HC.EventBus:Trigger("HC_GROUPING_MODE_CHANGED")  -- Sync with config checkbox
         container:Update(true)  -- Force update to re-render with new grouping
     end)
 
@@ -717,14 +717,14 @@ function HC.UI.Tabs:CreateLeaderboard(parent)
     end)
 
     -- Listen for activity log updates
-    HC.EventBus:Register("VE_ACTIVITY_LOG_UPDATED", function()
+    HC.EventBus:Register("HC_ACTIVITY_LOG_UPDATED", function()
         if container:IsShown() then
             container:Update()
         end
     end)
 
     -- Listen for alt mapping updates (refresh grouped view)
-    HC.EventBus:Register("VE_ALT_MAPPING_UPDATED", function()
+    HC.EventBus:Register("HC_ALT_MAPPING_UPDATED", function()
         if container.UpdateGroupBtnState then
             container.UpdateGroupBtnState()
         end
@@ -734,7 +734,7 @@ function HC.UI.Tabs:CreateLeaderboard(parent)
     end)
 
     -- Listen for theme updates to refresh colors
-    HC.EventBus:Register("VE_THEME_UPDATE", function()
+    HC.EventBus:Register("HC_THEME_UPDATE", function()
         ApplyListContainerColors()
         if container.UpdateGroupBtnState then
             container.UpdateGroupBtnState()
@@ -745,7 +745,7 @@ function HC.UI.Tabs:CreateLeaderboard(parent)
     end)
 
     -- Listen for active neighborhood changes (when user clicks "Set as Active")
-    HC.EventBus:Register("VE_ACTIVE_NEIGHBORHOOD_CHANGED", function()
+    HC.EventBus:Register("HC_ACTIHC_NEIGHBORHOOD_CHANGED", function()
         if container:IsShown() then
             container:Update()
         end

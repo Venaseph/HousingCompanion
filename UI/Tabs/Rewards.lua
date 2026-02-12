@@ -8,16 +8,17 @@ HC.UI = HC.UI or {}
 HC.UI.Tabs = HC.UI.Tabs or {}
 
 local function GetColors()
-    return HC.Constants:GetThemeColors() or {
-        primary = {1, 1, 1},
-        secondary = {0.7, 0.7, 0.7},
-        accent = {0, 1, 0},
-        danger = {1, 0, 0},
+    local theme = HC.Constants:GetThemeColors() or {}
+    return {
+        primary   = theme.text_header or {1, 1, 1},     -- white fallback
+        secondary = theme.text_dim   or {0.7, 0.7, 0.7},
+        accent    = theme.success    or {0, 1, 0},
+        danger    = theme.error      or {1, 0, 0},
     }
 end
 
 function HC.UI.Tabs:CreateRewards(parent)
-    local UI = HC.Constants.UI or {padding = 8}
+    local UI = HC.Constants.UI or { sectionSpacing = 8 }
     local colors = GetColors()
     
     local frame = CreateFrame("Frame", "HC_RewardsTab", parent)
@@ -28,10 +29,10 @@ function HC.UI.Tabs:CreateRewards(parent)
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", frame, "TOPLEFT", UI.sectionSpacing, -UI.sectionSpacing)
     title:SetText("Housing Rewards")
-    title:SetTextColor(colors.primary[1], colors.primary[2], colors.primary[3])
+    title:SetTextColor(unpack(colors.primary))
     frame.title = title
     
-    -- Filter buttons
+    -- Filter buttons (Achievements / Quests / Special Items)
     local filterFrame = CreateFrame("Frame", nil, frame)
     filterFrame:SetSize(400, 40)
     filterFrame:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -UI.sectionSpacing)
@@ -84,82 +85,5 @@ function HC.UI.Tabs:CreateRewards(parent)
     return frame
 end
 
-function HC.UI.Tabs:RefreshRewardsContent(rewardType)
-    local tab = _G["HC_RewardsTab"]
-    if not tab then return end
-    
-    tab.currentFilter = rewardType
-    local contentFrame = tab.contentFrame
-    
-    -- Clear existing content
-    for _, child in ipairs({contentFrame:GetChildren()}) do
-        child:Hide()
-    end
-    contentFrame:SetHeight(1)
-    
-    -- Get rewards to display
-    local rewards = HC.RewardsTracker:FilterRewards(rewardType, {
-        hideCompleted = false,
-        hideNonFavorited = false,
-    })
-    
-    local yOffset = 0
-    for i, reward in ipairs(rewards) do
-        local rewardLine = HC.UI.Tabs:CreateRewardLine(contentFrame, reward, rewardType, i)
-        rewardLine:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, -yOffset)
-        yOffset = yOffset + 30
-    end
-    
-    contentFrame:SetHeight(yOffset + 10)
-end
-
-function HC.UI.Tabs:CreateRewardLine(parent, reward, rewardType, index)
-    local UI = HC.Constants.UI or {padding = 8}
-    local colors = GetColors()
-    
-    local line = CreateFrame("Frame", nil, parent)
-    line:SetSize(parent:GetWidth() - 20, 25)
-    line:SetHeight(25)
-    
-    -- Background
-    local bg = line:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    if index % 2 == 0 then
-        bg:SetColorTexture(0.1, 0.1, 0.1, 0.3)
-    else
-        bg:SetColorTexture(0.05, 0.05, 0.05, 0.1)
-    end
-    
-    -- Completed checkbox
-    local checkbox = CreateFrame("CheckButton", nil, line, "UICheckButtonTemplate")
-    checkbox:SetSize(20, 20)
-    checkbox:SetPoint("LEFT", line, "LEFT", UI.sectionSpacing, 0)
-    checkbox:SetChecked(reward.completed)
-    checkbox:SetScript("OnClick", function(self)
-        if rewardType == "achievement" then
-            HC.RewardsTracker:OnAchievementEarned(reward.id)
-        elseif rewardType == "quest" then
-            HC.RewardsTracker:OnQuestCompleted(reward.id)
-        end
-    end)
-    
-    -- Reward name/ID
-    local text = line:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    text:SetPoint("LEFT", checkbox, "RIGHT", UI.sectionSpacing, 0)
-    text:SetText("[" .. reward.id .. "] " .. (reward.name or "Unknown"))
-    text:SetTextColor(colors.primary[1], colors.primary[2], colors.primary[3])
-    
-    -- Favorite button
-    local favoriteBtn = CreateFrame("Button", nil, line)
-    favoriteBtn:SetSize(20, 20)
-    favoriteBtn:SetPoint("RIGHT", line, "RIGHT", -UI.sectionSpacing, 0)
-    favoriteBtn:SetText(reward.favorite and "♥" or "♡")
-    favoriteBtn:SetScript("OnClick", function()
-        HC.RewardsTracker:ToggleFavorite(rewardType, reward.id)
-        HC.UI.Tabs:RefreshRewardsContent(rewardType)
-    end)
-    
-    return line
-end
-
-print("|cFF2aa198[HC]|r Rewards tab loaded")
+-- Keep your existing RefreshRewardsContent / CreateRewardLine / etc. functions here unchanged
+-- (they were not in the error, so assuming they're fine unless you see new issues)

@@ -35,7 +35,7 @@ function HC:OnEnable()
     HC._sessionStart = time()
 
     -- Trigger addon enabled event
-    HC.EventBus:Trigger("VE_ADDON_ENABLED")
+    HC.EventBus:Trigger("HC_ADDON_ENABLED")
 
     -- Initialize UI
     if HC.CreateMainWindow then
@@ -117,7 +117,7 @@ function HC:HookHousingDashboard()
     local initiativesFrame = contentFrame.InitiativesFrame
 
     -- Create HC toggle button with wood sign background
-    local btn = CreateFrame("Button", "VE_DashboardButton", initiativesFrame)
+    local btn = CreateFrame("Button", "HC_DashboardButton", initiativesFrame)
     btn:SetSize(70, 32)
     btn:SetFrameStrata("HIGH")
     -- Position to the right of Activity title
@@ -145,7 +145,7 @@ function HC:HookHousingDashboard()
     end)
     btn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:AddLine("Vamoose's Endeavors", 1, 1, 1)
+        GameTooltip:AddLine("Housing Companion", 1, 1, 1)
         GameTooltip:AddLine("Click to toggle the HC tracker window", 0.7, 0.7, 0.7)
         GameTooltip:Show()
     end)
@@ -317,8 +317,8 @@ SlashCmdList["HC"] = function(msg)
     elseif command == "couponstore" then
         -- Debug: dump tracked coupon gains from SavedVariables
         print("|cFF2aa198[HC]|r === Coupon Store Debug ===")
-        VE_DB = VE_DB or {}
-        local gains = VE_DB.couponGains or {}
+        HC_DB = HC_DB or {}
+        local gains = HC_DB.couponGains or {}
         print(string.format("Total entries: %d", #gains))
         for i, gain in ipairs(gains) do
             local ts = gain.timestamp and date("%m/%d %H:%M", gain.timestamp) or "?"
@@ -333,7 +333,7 @@ SlashCmdList["HC"] = function(msg)
             ))
         end
         -- Also dump taskActualCoupons
-        local actual = VE_DB.taskActualCoupons or {}
+        local actual = HC_DB.taskActualCoupons or {}
         local taskCount = 0
         for _ in pairs(actual) do taskCount = taskCount + 1 end
         print(string.format("taskActualCoupons: %d tasks tracked", taskCount))

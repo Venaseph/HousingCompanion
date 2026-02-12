@@ -4,7 +4,7 @@
 -- Source of truth for all theme colors
 -- ============================================================================
 
-VAMOOSE_SchemeConstants = {
+HC_SchemeConstants = {
 
     -- ========================================================================
     -- Solarized Dark: "The IDE Look"

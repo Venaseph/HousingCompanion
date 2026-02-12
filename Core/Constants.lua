@@ -12,10 +12,10 @@ HC.Colors = {}
 -- ============================================================================
 
 -- Import schemes from shared global (loaded via SchemeConstants.lua)
-HC.Colors.Schemes = VAMOOSE_SchemeConstants or {}
+HC.Colors.Schemes = HC_SchemeConstants or {}
 
 -- VE-specific colors to add to each scheme
-local VE_COLORS = {
+local HC_COLORS = {
     endeavor = {r=0.85, g=0.65, b=0.13, a=1.00}, -- Gold for endeavor points
     favor    = {r=0.40, g=0.75, b=0.40, a=1.00}, -- Green for favor/XP
     -- Medal colors for leaderboards
@@ -26,11 +26,11 @@ local VE_COLORS = {
 
 -- Add VE-specific colors to each scheme
 for _, scheme in pairs(HC.Colors.Schemes) do
-    scheme.endeavor = VE_COLORS.endeavor
-    scheme.favor = VE_COLORS.favor
-    scheme.gold = VE_COLORS.gold
-    scheme.silver = VE_COLORS.silver
-    scheme.bronze = VE_COLORS.bronze
+    scheme.endeavor = HC_COLORS.endeavor
+    scheme.favor = HC_COLORS.favor
+    scheme.gold = HC_COLORS.gold
+    scheme.silver = HC_COLORS.silver
+    scheme.bronze = HC_COLORS.bronze
 end
 
 -- ============================================================================
@@ -119,8 +119,8 @@ function HC.Constants:GetFontFile()
     local family = "ARIALN"
     if HC.Store and HC.Store.state and HC.Store.state.config then
         family = HC.Store.state.config.fontFamily or "ARIALN"
-    elseif VE_DB and VE_DB.config and VE_DB.config.fontFamily then
-        family = VE_DB.config.fontFamily
+    elseif HC_DB and HC_DB.config and HC_DB.config.fontFamily then
+        family = HC_DB.config.fontFamily
     end
     return self.FontFiles[family] or self.FontFiles.ARIALN
 end
@@ -128,11 +128,11 @@ end
 -- Get colors for current theme
 function HC.Constants:GetThemeColors()
     local theme = "housingtheme"
-    -- Read from Store state (immediate) rather than VE_DB (delayed save)
+    -- Read from Store state (immediate) rather than HC_DB (delayed save)
     if HC.Store and HC.Store.state and HC.Store.state.config then
         theme = HC.Store.state.config.theme or "housingtheme"
-    elseif VE_DB and VE_DB.config and VE_DB.config.theme then
-        theme = VE_DB.config.theme
+    elseif HC_DB and HC_DB.config and HC_DB.config.theme then
+        theme = HC_DB.config.theme
     end
 
     local themeName = self.ThemeNames and self.ThemeNames[theme] or "HousingTheme"
@@ -167,11 +167,11 @@ end
 
 -- Get current theme name
 function HC.Constants:GetCurrentTheme()
-    -- Read from Store state (immediate) rather than VE_DB (delayed save)
+    -- Read from Store state (immediate) rather than HC_DB (delayed save)
     if HC.Store and HC.Store.state and HC.Store.state.config then
         return HC.Store.state.config.theme or "housingtheme"
-    elseif VE_DB and VE_DB.config and VE_DB.config.theme then
-        return VE_DB.config.theme
+    elseif HC_DB and HC_DB.config and HC_DB.config.theme then
+        return HC_DB.config.theme
     end
     return "housingtheme"
 end

@@ -81,7 +81,7 @@ SlashCmdList["HC"] = function(msg)
 ✅ **Function calls**: All use `HC:MethodName()`
 ✅ **Slash commands**: Registered as SLASH_HC1 and SLASH_HC2
 ✅ **SlashCmdList**: Points to "HC" command
-✅ **Variable assignments**: All use HC_DB (not VE or VE_DB)
+✅ **Variable assignments**: All use HC_DB (not VE or HC_DB)
 ✅ **Method references**: All corrected
 ✅ **No executable VE references**: Verified
 ✅ **Window opening**: Now works with `/hc` command

@@ -24,29 +24,29 @@ local showRewardsHighlight = true
 local sortedTasksCache = {}
 
 local function LoadSortState()
-    if VE_DB and VE_DB.ui and VE_DB.ui.taskSort then
-        sortState.column = VE_DB.ui.taskSort.column
-        sortState.direction = VE_DB.ui.taskSort.direction
+    if HC_DB and HC_DB.ui and HC_DB.ui.taskSort then
+        sortState.column = HC_DB.ui.taskSort.column
+        sortState.direction = HC_DB.ui.taskSort.direction
     end
     -- Load rewards highlight toggle (default true)
-    if VE_DB and VE_DB.ui and VE_DB.ui.showRewardsHighlight ~= nil then
-        showRewardsHighlight = VE_DB.ui.showRewardsHighlight
+    if HC_DB and HC_DB.ui and HC_DB.ui.showRewardsHighlight ~= nil then
+        showRewardsHighlight = HC_DB.ui.showRewardsHighlight
     end
 end
 
 local function SaveSortState()
-    VE_DB = VE_DB or {}
-    VE_DB.ui = VE_DB.ui or {}
-    VE_DB.ui.taskSort = {
+    HC_DB = HC_DB or {}
+    HC_DB.ui = HC_DB.ui or {}
+    HC_DB.ui.taskSort = {
         column = sortState.column,
         direction = sortState.direction,
     }
 end
 
 local function SaveRewardsHighlight()
-    VE_DB = VE_DB or {}
-    VE_DB.ui = VE_DB.ui or {}
-    VE_DB.ui.showRewardsHighlight = showRewardsHighlight
+    HC_DB = HC_DB or {}
+    HC_DB.ui = HC_DB.ui or {}
+    HC_DB.ui.showRewardsHighlight = showRewardsHighlight
 end
 
 -- Compute progress hash that changes when any task's progress changes
@@ -424,7 +424,7 @@ function HC.UI.Tabs:CreateEndeavors(parent)
         self:Update()
     end)
 
-    HC.EventBus:Register("VE_THEME_UPDATE", function()
+    HC.EventBus:Register("HC_THEME_UPDATE", function()
         ApplyContainerColors()
         if container:IsShown() then
             container:Update(true)
@@ -432,14 +432,14 @@ function HC.UI.Tabs:CreateEndeavors(parent)
     end)
 
     -- Listen for active neighborhood changes (when user clicks "Set as Active")
-    HC.EventBus:Register("VE_ACTIVE_NEIGHBORHOOD_CHANGED", function()
+    HC.EventBus:Register("HC_ACTIHC_NEIGHBORHOOD_CHANGED", function()
         if container:IsShown() then
             container:Update()
         end
     end)
 
     -- Listen for favourites changes to refresh star display
-    HC.EventBus:Register("VE_FAVOURITES_CHANGED", function()
+    HC.EventBus:Register("HC_FAVOURITES_CHANGED", function()
         if container:IsShown() then
             -- Refresh favourite status on all visible rows
             for _, row in ipairs(container.taskRows) do

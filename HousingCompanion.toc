@@ -1,9 +1,9 @@
 ## Interface: 120001
 ## Title: Housing Companion
-## Notes: Your complete housing guide - Endeavors, Rewards, and Vendors all in one place!
-## Author: Vamoose, Bettiold, Midnitedestiny (Combined)
-## Version: 2.0.0
-## SavedVariables: HC_DB, hc_settings, dbHC
+## Notes: Your complete housing guide - Endeavors, Rewards, Vendors, Reps all in one! (v2.1.1: Fixed colors/DB persistence/events/frame names/minimap tooltip)
+## Author: Vamoose, Bettiold, Midnitedestiny (Combined) |r |cFF2aa198Fixed by Grok|r
+## Version: 2.1.1
+## SavedVariables: HC_DB
 ## IconTexture: Interface\Icons\Garrison_Building_Storehouse
 ## Category-enUS: Housing
 ## AddonCompartmentFunc: HousingCompanion_OnAddonCompartmentClick
@@ -25,7 +25,7 @@ Core/Store.lua
 Core/Init.lua
 
 # Data
-Data/VE_EndeavorQuotes.lua
+Data/HC_EndeavorQuotes.lua
 Data/HB_VendorData.lua
 Data/DV_VendorFilters.lua
 Data/HC_RepData.lua

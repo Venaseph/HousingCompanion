@@ -141,7 +141,7 @@ function Tracker:OnHouseListUpdated(houseInfoList)
 
     -- Priority 2: Saved houseGUID from last session
     if not selectedHouse then
-        local savedGUID = VE_DB and VE_DB.selectedHouseGUID
+        local savedGUID = HC_DB and HC_DB.selectedHouseGUID
         if savedGUID then
             for _, houseInfo in ipairs(houseInfoList) do
                 if houseInfo.houseGUID == savedGUID then
@@ -250,20 +250,20 @@ end
 
 -- Track actual coupon gains (post-DR amounts from CURRENCY_DISPLAY_UPDATE)
 function Tracker:TrackCouponGain(amount, source)
-    VE_DB = VE_DB or {}
-    VE_DB.couponGains = VE_DB.couponGains or {}
-    VE_DB.taskActualCoupons = VE_DB.taskActualCoupons or {}
+    HC_DB = HC_DB or {}
+    HC_DB.couponGains = HC_DB.couponGains or {}
+    HC_DB.taskActualCoupons = HC_DB.taskActualCoupons or {}
 
     local now = time()
     local charName = UnitName("player")
 
-    -- Correlate with pending task from INITIATIVE_TASK_COMPLETED event
+    -- Correlate with pending task from INITIATIHC_TASK_COMPLETED event
     -- (Activity log isn't updated until AFTER CURRENCY_DISPLAY_UPDATE fires)
     local correlatedTask = nil
     local correlatedTaskID = nil
     local debug = HC.Store:GetState().config.debug
 
-    -- Check for pending task completion (set by EndeavorTracker on INITIATIVE_TASK_COMPLETED)
+    -- Check for pending task completion (set by EndeavorTracker on INITIATIHC_TASK_COMPLETED)
     if HC._pendingTaskCompletion then
         local pending = HC._pendingTaskCompletion
         local timeDiff = now - (pending.timestamp or 0)
@@ -271,8 +271,8 @@ function Tracker:TrackCouponGain(amount, source)
             correlatedTask = pending.taskName
             correlatedTaskID = pending.taskID
             -- Store history of coupon values per task (for DR calculation later)
-            VE_DB.taskActualCoupons[correlatedTask] = VE_DB.taskActualCoupons[correlatedTask] or {}
-            table.insert(VE_DB.taskActualCoupons[correlatedTask], {
+            HC_DB.taskActualCoupons[correlatedTask] = HC_DB.taskActualCoupons[correlatedTask] or {}
+            table.insert(HC_DB.taskActualCoupons[correlatedTask], {
                 amount = amount,
                 timestamp = now,
                 character = charName,
@@ -281,12 +281,12 @@ function Tracker:TrackCouponGain(amount, source)
                 isRepeatable = pending.isRepeatable,
             })
             -- Keep only last 20 entries per task to prevent bloat
-            while #VE_DB.taskActualCoupons[correlatedTask] > 20 do
-                table.remove(VE_DB.taskActualCoupons[correlatedTask], 1)
+            while #HC_DB.taskActualCoupons[correlatedTask] > 20 do
+                table.remove(HC_DB.taskActualCoupons[correlatedTask], 1)
             end
             if debug then
                 print(string.format("|cFF2aa198[VE Coupon]|r Correlated: %s (ID:%s) = %d coupons (history: %d)",
-                    correlatedTask, tostring(pending.taskID), amount, #VE_DB.taskActualCoupons[correlatedTask]))
+                    correlatedTask, tostring(pending.taskID), amount, #HC_DB.taskActualCoupons[correlatedTask]))
             end
         end
         HC._pendingTaskCompletion = nil  -- Clear after use
@@ -295,7 +295,7 @@ function Tracker:TrackCouponGain(amount, source)
     -- Only store in couponGains if we correlated it with a task
     -- (avoids storing currency transfers, weekly rewards, etc.)
     if correlatedTask then
-        table.insert(VE_DB.couponGains, {
+        table.insert(HC_DB.couponGains, {
             amount = amount,
             source = source,
             timestamp = now,
@@ -305,13 +305,13 @@ function Tracker:TrackCouponGain(amount, source)
         })
 
         -- Keep only last 100 entries to prevent SavedVariables bloat
-        while #VE_DB.couponGains > 100 do
-            table.remove(VE_DB.couponGains, 1)
+        while #HC_DB.couponGains > 100 do
+            table.remove(HC_DB.couponGains, 1)
         end
     end
 
     -- Trigger event for UI updates
-    HC.EventBus:Trigger("VE_COUPON_GAINED", { amount = amount, taskName = correlatedTask })
+    HC.EventBus:Trigger("HC_COUPON_GAINED", { amount = amount, taskName = correlatedTask })
 
     if debug then
         local taskStr = correlatedTask and (" -> " .. correlatedTask) or ""
@@ -323,7 +323,7 @@ end
 function Tracker:GetCouponGainsThisSession()
     local sessionStart = HC._sessionStart or (time() - 86400)
     local total = 0
-    for _, gain in ipairs(VE_DB and VE_DB.couponGains or {}) do
+    for _, gain in ipairs(HC_DB and HC_DB.couponGains or {}) do
         if gain.timestamp >= sessionStart then
             total = total + gain.amount
         end

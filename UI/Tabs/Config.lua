@@ -308,7 +308,7 @@ function HC.UI.Tabs:CreateConfig(parent)
     groupByAccountCheckbox:SetScript("OnClick", function(self)
         local newMode = self:GetChecked() and "byMain" or "individual"
         HC.Store:Dispatch("SET_GROUPING_MODE", { mode = newMode })
-        HC.EventBus:Trigger("VE_ALT_MAPPING_UPDATED")  -- Update leaderboard button and refresh
+        HC.EventBus:Trigger("HC_ALT_MAPPING_UPDATED")  -- Update leaderboard button and refresh
     end)
 
     function groupByAccountRow:UpdateColors()
@@ -426,7 +426,7 @@ function HC.UI.Tabs:CreateConfig(parent)
 
             -- Trigger theme update event
             local themeName = HC.Constants.ThemeNames[key] or "SolarizedDark"
-            HC.EventBus:Trigger("VE_THEME_UPDATE", { themeName = themeName })
+            HC.EventBus:Trigger("HC_THEME_UPDATE", { themeName = themeName })
 
             print("|cFF2aa198[VE]|r Theme switched to " .. (data.label or key))
         end
@@ -477,7 +477,7 @@ function HC.UI.Tabs:CreateConfig(parent)
         onSelect = function(key, data)
             HC.Store:Dispatch("SET_CONFIG", { key = "fontFamily", value = key })
             -- Trigger theme update to refresh all fonts
-            HC.EventBus:Trigger("VE_THEME_UPDATE", { fontFamily = key })
+            HC.EventBus:Trigger("HC_THEME_UPDATE", { fontFamily = key })
             print("|cFF2aa198[VE]|r Font changed to " .. (data.label or key))
         end
     })
@@ -545,7 +545,7 @@ function HC.UI.Tabs:CreateConfig(parent)
         newScale = math.floor(newScale * 10 + 0.5) / 10  -- Round to 1 decimal
         HC.Store:Dispatch("SET_UI_SCALE", { scale = newScale })
         uiScaleValue:SetText(string.format("%.0f%%", newScale * 100))
-        HC.EventBus:Trigger("VE_UI_SCALE_UPDATE", {})
+        HC.EventBus:Trigger("HC_UI_SCALE_UPDATE", {})
     end)
     uiScaleUpBtn:SetScript("OnClick", function()
         local current = HC.Store:GetState().config.uiScale or 1.0
@@ -553,7 +553,7 @@ function HC.UI.Tabs:CreateConfig(parent)
         newScale = math.floor(newScale * 10 + 0.5) / 10  -- Round to 1 decimal
         HC.Store:Dispatch("SET_UI_SCALE", { scale = newScale })
         uiScaleValue:SetText(string.format("%.0f%%", newScale * 100))
-        HC.EventBus:Trigger("VE_UI_SCALE_UPDATE", {})
+        HC.EventBus:Trigger("HC_UI_SCALE_UPDATE", {})
     end)
 
     container.uiScaleLabel = uiScaleLabel
@@ -602,7 +602,7 @@ function HC.UI.Tabs:CreateConfig(parent)
         newOpacity = math.floor(newOpacity * 10 + 0.5) / 10
         HC.Store:Dispatch("SET_BG_OPACITY", { opacity = newOpacity })
         opacityValue:SetText(string.format("%.0f%%", newOpacity * 100))
-        HC.EventBus:Trigger("VE_THEME_UPDATE", {})
+        HC.EventBus:Trigger("HC_THEME_UPDATE", {})
     end)
     opacityUpBtn:SetScript("OnClick", function()
         local current = HC.Store:GetState().config.bgOpacity or 0.9
@@ -610,7 +610,7 @@ function HC.UI.Tabs:CreateConfig(parent)
         newOpacity = math.floor(newOpacity * 10 + 0.5) / 10
         HC.Store:Dispatch("SET_BG_OPACITY", { opacity = newOpacity })
         opacityValue:SetText(string.format("%.0f%%", newOpacity * 100))
-        HC.EventBus:Trigger("VE_THEME_UPDATE", {})
+        HC.EventBus:Trigger("HC_THEME_UPDATE", {})
     end)
 
     container.opacityLabel = opacityLabel
@@ -646,7 +646,7 @@ function HC.UI.Tabs:CreateConfig(parent)
     scrollContent:SetHeight(math.abs(yOffset))
 
     -- Listen for theme updates to refresh colors
-    HC.EventBus:Register("VE_THEME_UPDATE", function()
+    HC.EventBus:Register("HC_THEME_UPDATE", function()
         ApplyPanelColors()
         local colors = GetColors()
         if container.versionInfo then
@@ -703,7 +703,7 @@ function HC.UI.Tabs:CreateConfig(parent)
     end)
 
     -- Listen for grouping mode changes from leaderboard button
-    HC.EventBus:Register("VE_GROUPING_MODE_CHANGED", function()
+    HC.EventBus:Register("HC_GROUPING_MODE_CHANGED", function()
         if container.groupByAccountCheckbox then
             local state = HC.Store:GetState()
             container.groupByAccountCheckbox:SetChecked(state.altSharing.groupingMode == "byMain")

@@ -69,9 +69,9 @@ end
 
 function Minimap_Module:Initialize()
     -- Initialize settings
-    VE_DB = VE_DB or {}
-    if not VE_DB.minimap then
-        VE_DB.minimap = {
+    HC_DB = HC_DB or {}
+    if not HC_DB.minimap then
+        HC_DB.minimap = {
             hide = false,
             minimapPos = 200,
             lock = false,
@@ -81,7 +81,7 @@ function Minimap_Module:Initialize()
     end
 
     -- Create minimap button
-    minimapButton = CreateFrame("Button", "VE_MinimapButton", Minimap)
+    minimapButton = CreateFrame("Button", "HC_MinimapButton", Minimap)
     minimapButton:SetSize(32, 32)
     minimapButton:SetFrameStrata("MEDIUM")
     minimapButton:SetFrameLevel(8)
@@ -110,7 +110,7 @@ function Minimap_Module:Initialize()
 
     -- Drag handler
     minimapButton:SetScript("OnDragStart", function(self)
-        if not VE_DB.minimap.lock then
+        if not HC_DB.minimap.lock then
             self:SetScript("OnUpdate", function(btn)
                 Minimap_Module:OnUpdate(btn)
             end)
@@ -151,7 +151,7 @@ function Minimap_Module:OnUpdate(btn)
     px, py = px / scale, py / scale
 
     local angle = math.atan2(py - my, px - mx)
-    VE_DB.minimap.minimapPos = math.deg(angle)
+    HC_DB.minimap.minimapPos = math.deg(angle)
     self:UpdatePosition()
 end
 
@@ -160,7 +160,7 @@ function Minimap_Module:UpdatePosition()
 
     minimapButton:ClearAllPoints()
 
-    local angle = VE_DB.minimap.minimapPos or 200
+    local angle = HC_DB.minimap.minimapPos or 200
     local x, y
 
     if IsMinimapSquare() then
@@ -175,13 +175,13 @@ end
 function Minimap_Module:UpdateVisibility()
     if not minimapButton then return end
 
-    -- Check both legacy VE_DB.minimap and Store config (config tab uses Store)
+    -- Check both legacy HC_DB.minimap and Store config (config tab uses Store)
     local storeConfig = HC.Store and HC.Store:GetState() and HC.Store:GetState().config
     local showFromConfig = storeConfig and storeConfig.showMinimapButton
-    local showFromDB = VE_DB.minimap.showMinimapButton
+    local showFromDB = HC_DB.minimap.showMinimapButton
 
     -- Hide if either source says to hide, or if legacy hide flag is set
-    if VE_DB.minimap.hide or (showFromConfig == false) or (showFromConfig == nil and not showFromDB) then
+    if HC_DB.minimap.hide or (showFromConfig == false) or (showFromConfig == nil and not showFromDB) then
         minimapButton:Hide()
     else
         minimapButton:Show()
@@ -190,8 +190,8 @@ end
 
 function Minimap_Module:Show()
     if minimapButton then
-        VE_DB.minimap.hide = false
-        VE_DB.minimap.showMinimapButton = true
+        HC_DB.minimap.hide = false
+        HC_DB.minimap.showMinimapButton = true
         -- Also update Store config to keep in sync
         if HC.Store then
             HC.Store:Dispatch("SET_CONFIG", { key = "showMinimapButton", value = true })
@@ -202,7 +202,7 @@ end
 
 function Minimap_Module:Hide()
     if minimapButton then
-        VE_DB.minimap.hide = true
+        HC_DB.minimap.hide = true
         -- Also update Store config to keep in sync
         if HC.Store then
             HC.Store:Dispatch("SET_CONFIG", { key = "showMinimapButton", value = false })
@@ -230,12 +230,12 @@ function Minimap_Module:RegisterCompartment()
         return
     end
 
-    if not VE_DB.minimap.showInCompartment then
+    if not HC_DB.minimap.showInCompartment then
         return
     end
 
     AddonCompartmentFrame:RegisterAddon({
-        text = "Vamoose's Endeavors",
+        text = "Housing Companion",
         icon = "Interface\\Icons\\Garrison_Building_Storehouse",
         notCheckable = true,
         func = function(btn, arg1, arg2, checked, mouseButton)

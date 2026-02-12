@@ -12,8 +12,8 @@ HC = HC or {}
 local function SaveWindowPosition(frame)
     if not frame then return end
     local point, _, relPoint, x, y = frame:GetPoint()
-    VE_DB = VE_DB or {}
-    VE_DB.windowPos = {
+    HC_DB = HC_DB or {}
+    HC_DB.windowPos = {
         point = point,
         relPoint = relPoint,
         x = x,
@@ -23,8 +23,8 @@ end
 
 local function RestoreWindowPosition(frame)
     if not frame then return end
-    if VE_DB and VE_DB.windowPos then
-        local pos = VE_DB.windowPos
+    if HC_DB and HC_DB.windowPos then
+        local pos = HC_DB.windowPos
         frame:ClearAllPoints()
         frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
     end
@@ -647,10 +647,10 @@ function HC:CreateMainWindow()
     end
 
     -- Listen for activity log updates (refresh contribution)
-    HC.EventBus:Register("VE_ACTIVITY_LOG_UPDATED", function(payload)
+    HC.EventBus:Register("HC_ACTIVITY_LOG_UPDATED", function(payload)
         local debug = HC.Store:GetState().config.debug
         if debug then
-            print("|cFF00ffff[VE MainFrame]|r VE_ACTIVITY_LOG_UPDATED received, frame visible:", frame:IsVisible())
+            print("|cFF00ffff[VE MainFrame]|r HC_ACTIVITY_LOG_UPDATED received, frame visible:", frame:IsVisible())
         end
         -- Refresh contribution display (calculated from activity log)
         if frame.UpdateHeader then
@@ -664,7 +664,7 @@ function HC:CreateMainWindow()
     end)
 
     -- Listen for house list updates
-    HC.EventBus:Register("VE_HOUSE_LIST_UPDATED", function(payload)
+    HC.EventBus:Register("HC_HOUSE_LIST_UPDATED", function(payload)
         if frame.UpdateHouseDropdown and payload then
             frame:UpdateHouseDropdown(payload.houseList, payload.selectedIndex)
         end
@@ -674,7 +674,7 @@ function HC:CreateMainWindow()
     end)
 
     -- Listen for active neighborhood changes (from VE button or Blizzard's dashboard)
-    HC.EventBus:Register("VE_ACTIVE_NEIGHBORHOOD_CHANGED", function()
+    HC.EventBus:Register("HC_ACTIHC_NEIGHBORHOOD_CHANGED", function()
         if frame.UpdateActiveNeighborhood then
             frame:UpdateActiveNeighborhood()
         end
@@ -852,8 +852,8 @@ function HC:CreateMainWindow()
         -- Click to unfavourite
         row:SetScript("OnClick", function(self)
             if self.taskName and IsShiftKeyDown() then
-                VE_DB.ui.favouriteTasks[self.taskName] = nil
-                HC.EventBus:Trigger("VE_FAVOURITES_CHANGED")
+                HC_DB.ui.favouriteTasks[self.taskName] = nil
+                HC.EventBus:Trigger("HC_FAVOURITES_CHANGED")
                 PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
             end
         end)
@@ -888,9 +888,9 @@ function HC:CreateMainWindow()
 
     -- Update mini favourites panel
     function frame:UpdateMiniFavourites()
-        VE_DB = VE_DB or {}
-        VE_DB.ui = VE_DB.ui or {}
-        VE_DB.ui.favouriteTasks = VE_DB.ui.favouriteTasks or {}
+        HC_DB = HC_DB or {}
+        HC_DB.ui = HC_DB.ui or {}
+        HC_DB.ui.favouriteTasks = HC_DB.ui.favouriteTasks or {}
 
         local state = HC.Store:GetState()
         local tasks = state.tasks or {}
@@ -899,7 +899,7 @@ function HC:CreateMainWindow()
         -- Build list of favourite tasks (match by name)
         local favTasks = {}
         for _, task in ipairs(tasks) do
-            if VE_DB.ui.favouriteTasks[task.name] then
+            if HC_DB.ui.favouriteTasks[task.name] then
                 table.insert(favTasks, task)
                 if #favTasks >= MAX_MINI_ROWS then break end
             end
@@ -953,7 +953,7 @@ function HC:CreateMainWindow()
     end
 
     -- Listen for favourites changes
-    HC.EventBus:Register("VE_FAVOURITES_CHANGED", function()
+    HC.EventBus:Register("HC_FAVOURITES_CHANGED", function()
         if frame.isMinimized then
             frame:UpdateMiniFavourites()
             -- Minimized base height: title bar + progress bar + stats row + padding
@@ -1115,7 +1115,7 @@ function HC:CreateMainWindow()
     self.MainFrame = frame
 
     -- Listen for state changes to refresh UI (updates even when hidden so data is fresh on show)
-    HC.EventBus:Register("VE_STATE_CHANGED", function(payload)
+    HC.EventBus:Register("HC_STATE_CHANGED", function(payload)
         -- Always update housing display on housing state changes
         if payload.action == "SET_HOUSE_LEVEL" or payload.action == "SET_COUPONS" then
             frame:UpdateHousingDisplay()
@@ -1145,7 +1145,7 @@ function HC:CreateMainWindow()
     -- Listen for theme updates
     -- Note: Most theming is handled by Theme Engine via registered widgets
     -- We only need to update houseLevelText here because it uses inline color codes
-    HC.EventBus:Register("VE_THEME_UPDATE", function()
+    HC.EventBus:Register("HC_THEME_UPDATE", function()
         local colors = HC.Constants:GetThemeColors()
         HC.Theme.ApplyFont(frame.houseLevelText, colors, "small")
         frame:UpdateHousingDisplay()
@@ -1175,7 +1175,7 @@ function HC:CreateMainWindow()
     end)
 
     -- Listen for UI scale changes
-    HC.EventBus:Register("VE_UI_SCALE_UPDATE", function()
+    HC.EventBus:Register("HC_UI_SCALE_UPDATE", function()
         local scale = HC.Store:GetState().config.uiScale or 1.0
         frame:SetScale(scale)
     end)

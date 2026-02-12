@@ -24,12 +24,12 @@ Tracker.frame = CreateFrame("Frame")
 function Tracker:Initialize()
     -- Register for neighborhood initiative events
     self.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    self.frame:RegisterEvent("NEIGHBORHOOD_INITIATIVE_UPDATED")
-    self.frame:RegisterEvent("INITIATIVE_TASKS_TRACKED_UPDATED")
-    self.frame:RegisterEvent("INITIATIVE_TASKS_TRACKED_LIST_CHANGED")
-    self.frame:RegisterEvent("INITIATIVE_ACTIVITY_LOG_UPDATED")
-    self.frame:RegisterEvent("INITIATIVE_TASK_COMPLETED")
-    self.frame:RegisterEvent("INITIATIVE_COMPLETED")
+    self.frame:RegisterEvent("NEIGHBORHOOD_INITIATIHC_UPDATED")
+    self.frame:RegisterEvent("INITIATIHC_TASKS_TRACKED_UPDATED")
+    self.frame:RegisterEvent("INITIATIHC_TASKS_TRACKED_LIST_CHANGED")
+    self.frame:RegisterEvent("INITIATIHC_ACTIVITY_LOG_UPDATED")
+    self.frame:RegisterEvent("INITIATIHC_TASK_COMPLETED")
+    self.frame:RegisterEvent("INITIATIHC_COMPLETED")
     self.frame:RegisterEvent("PLAYER_HOUSE_LIST_UPDATED")
 
     -- Track activity log loading state
@@ -46,7 +46,7 @@ function Tracker:Initialize()
     self.cachedHouseXPBreakdown = nil
 
     -- XP cap (2250) and contribution are per-house, not account-wide.
-    -- VE_DB.houseData[guid] persists XP/contribution so house switches show correct values.
+    -- HC_DB.houseData[guid] persists XP/contribution so house switches show correct values.
     self.currentHouseGUID = nil
 
     -- Task XP cache (from activity log) - maps taskID -> { amount, completionTime }
@@ -76,7 +76,7 @@ function Tracker:Initialize()
     end)
 
     -- Listen for state changes to save character progress (debounced)
-    HC.EventBus:Register("VE_STATE_CHANGED", function(payload)
+    HC.EventBus:Register("HC_STATE_CHANGED", function(payload)
         if payload.action == "SET_TASKS" or payload.action == "SET_ENDEAVOR_INFO" then
             -- Debounce character saves - only save once per second max
             if self.saveCharProgressTimer then
@@ -90,7 +90,7 @@ function Tracker:Initialize()
     end)
 
     -- Listen for coupon gains to refresh task display with actual values
-    HC.EventBus:Register("VE_COUPON_GAINED", function(payload)
+    HC.EventBus:Register("HC_COUPON_GAINED", function(payload)
         -- Use centralized refresh with proper debouncing (0.3s)
         HC.EndeavorTracker:QueueDataRefresh()
     end)
@@ -112,10 +112,10 @@ function Tracker:OnEvent(event, ...)
 
     if event == "PLAYER_ENTERING_WORLD" then
         -- Register current character for account-wide tracking (used by GetAccountCompletionCount)
-        VE_DB = VE_DB or {}
-        VE_DB.myCharacters = VE_DB.myCharacters or {}
+        HC_DB = HC_DB or {}
+        HC_DB.myCharacters = HC_DB.myCharacters or {}
         local charName = UnitName("player")
-        if charName then VE_DB.myCharacters[charName] = true end
+        if charName then HC_DB.myCharacters[charName] = true end
 
         -- Initialize housing system first (like Blizzard's dashboard does)
         -- This triggers PLAYER_HOUSE_LIST_UPDATED which handles the actual data fetch
@@ -130,22 +130,22 @@ function Tracker:OnEvent(event, ...)
             end
         end)
 
-    elseif event == "NEIGHBORHOOD_INITIATIVE_UPDATED" then
+    elseif event == "NEIGHBORHOOD_INITIATIHC_UPDATED" then
         -- Debug print moved to QueueDataRefresh to reduce noise (Blizzard fires this event multiple times)
         self:QueueDataRefresh()
 
-    elseif event == "INITIATIVE_TASKS_TRACKED_UPDATED" then
+    elseif event == "INITIATIHC_TASKS_TRACKED_UPDATED" then
         -- Debug print moved to QueueDataRefresh to reduce noise (Blizzard fires this event multiple times)
         self:QueueDataRefresh()
         -- RefreshTrackedTasks removed - FetchEndeavorData already updates task state
 
-    elseif event == "INITIATIVE_TASKS_TRACKED_LIST_CHANGED" then
+    elseif event == "INITIATIHC_TASKS_TRACKED_LIST_CHANGED" then
         if debug then
             print("|cFF2aa198[VE Tracker]|r Task tracking list changed")
         end
         self:RefreshTrackedTasks()
 
-    elseif event == "INITIATIVE_ACTIVITY_LOG_UPDATED" then
+    elseif event == "INITIATIHC_ACTIVITY_LOG_UPDATED" then
         -- Debounce — this event fires frequently in busy areas, but the refresh
         -- itself is cheap (read cache + pre-calculate). Debounce keeps UI rebuilds sane.
         if self.activityLogRefreshTimer then
@@ -156,7 +156,7 @@ function Tracker:OnEvent(event, ...)
             self:RefreshActivityLogCache()
         end)
 
-    elseif event == "INITIATIVE_TASK_COMPLETED" then
+    elseif event == "INITIATIHC_TASK_COMPLETED" then
         local taskName = ...
         if debug then
             print("|cFF2aa198[VE Tracker]|r Task completed: |cFFFFD100" .. tostring(taskName) .. "|r")
@@ -184,14 +184,14 @@ function Tracker:OnEvent(event, ...)
         if HC.Vamoose and HC.Vamoose.OnTaskCompleted then
             HC.Vamoose.OnTaskCompleted(taskID, taskName)
         end
-        -- Data refresh happens via INITIATIVE_ACTIVITY_LOG_UPDATED (debounced),
+        -- Data refresh happens via INITIATIHC_ACTIVITY_LOG_UPDATED (debounced),
         -- which fires ~1s after this event when server has processed the completion.
         -- Request house level update for XP delta display.
         if HC.HousingTracker then
             HC.HousingTracker:RequestHouseInfo(true)
         end
 
-    elseif event == "INITIATIVE_COMPLETED" then
+    elseif event == "INITIATIHC_COMPLETED" then
         local initiativeTitle = ...
         if debug then
             print("|cFF2aa198[VE Tracker]|r Initiative completed: " .. tostring(initiativeTitle))
@@ -240,8 +240,8 @@ function Tracker:OnEvent(event, ...)
 
         -- Priority 2: Saved houseGUID from last session
         if not selectedIndex then
-            VE_DB = VE_DB or {}
-            local savedGUID = VE_DB.selectedHouseGUID
+            HC_DB = HC_DB or {}
+            local savedGUID = HC_DB.selectedHouseGUID
             if savedGUID and houseInfoList then
                 for i, houseInfo in ipairs(houseInfoList) do
                     if houseInfo.houseGUID == savedGUID then
@@ -262,11 +262,11 @@ function Tracker:OnEvent(event, ...)
         if selectedIndex then
             self.selectedHouseIndex = selectedIndex
             self.currentHouseGUID = houseInfoList[selectedIndex].houseGUID
-            VE_DB = VE_DB or {}
-            VE_DB.selectedHouseGUID = self.currentHouseGUID
+            HC_DB = HC_DB or {}
+            HC_DB.selectedHouseGUID = self.currentHouseGUID
 
             -- Load persisted per-house XP data for immediate display
-            local savedHouseData = VE_DB.houseData and VE_DB.houseData[self.currentHouseGUID]
+            local savedHouseData = HC_DB.houseData and HC_DB.houseData[self.currentHouseGUID]
             if savedHouseData then
                 self.cachedPlayerContribution = savedHouseData.playerContribution or 0
                 self.cachedHouseXP = savedHouseData.houseXP or 0
@@ -283,7 +283,7 @@ function Tracker:OnEvent(event, ...)
         end
 
         -- Notify UI about house list update
-        HC.EventBus:Trigger("VE_HOUSE_LIST_UPDATED", { houseList = self.houseList, selectedIndex = selectedIndex })
+        HC.EventBus:Trigger("HC_HOUSE_LIST_UPDATED", { houseList = self.houseList, selectedIndex = selectedIndex })
 
         -- Set viewing neighborhood and request data (must set context first like Blizzard dashboard)
         if C_NeighborhoodInitiative and neighborhoodGUID then
@@ -307,7 +307,7 @@ function Tracker:UpdateFetchStatus(state, attempt, nextRetryTime)
     self.fetchStatus.nextRetry = nextRetryTime
     -- Only fire event if state actually changed (prevents spam on repeated "loaded" calls)
     if prevState ~= state then
-        HC.EventBus:Trigger("VE_FETCH_STATUS_CHANGED", self.fetchStatus)
+        HC.EventBus:Trigger("HC_FETCH_STATUS_CHANGED", self.fetchStatus)
     end
 end
 
@@ -363,7 +363,7 @@ function Tracker:ClearEndeavorData()
     })
     HC.Store:Dispatch("SET_TASKS", { tasks = {} })
     self.activityLogLoaded = false
-    HC.EventBus:Trigger("VE_ACTIVITY_LOG_UPDATED", { timestamp = nil })
+    HC.EventBus:Trigger("HC_ACTIVITY_LOG_UPDATED", { timestamp = nil })
 end
 
 function Tracker:ValidateRequirements()
@@ -490,7 +490,7 @@ function Tracker:FetchEndeavorData(_, attempt)
     -- Detect if active neighborhood changed (e.g., from Blizzard's dashboard)
     if activeGUID and activeGUID ~= self.lastKnownActiveGUID then
         self.lastKnownActiveGUID = activeGUID
-        HC.EventBus:Trigger("VE_ACTIVE_NEIGHBORHOOD_CHANGED")
+        HC.EventBus:Trigger("HC_ACTIHC_NEIGHBORHOOD_CHANGED")
     end
 
     -- Sync dropdown if Blizzard's dashboard changed the viewing neighborhood
@@ -506,9 +506,9 @@ function Tracker:FetchEndeavorData(_, attempt)
                     end
                     self.selectedHouseIndex = i
                     self.currentHouseGUID = houseInfo.houseGUID
-                    VE_DB = VE_DB or {}
-                    VE_DB.selectedHouseGUID = houseInfo.houseGUID
-                    HC.EventBus:Trigger("VE_HOUSE_LIST_UPDATED", { houseList = self.houseList, selectedIndex = i })
+                    HC_DB = HC_DB or {}
+                    HC_DB.selectedHouseGUID = houseInfo.houseGUID
+                    HC.EventBus:Trigger("HC_HOUSE_LIST_UPDATED", { houseList = self.houseList, selectedIndex = i })
                     break
                 end
             end
@@ -530,7 +530,7 @@ function Tracker:FetchEndeavorData(_, attempt)
         })
         HC.Store:Dispatch("SET_TASKS", { tasks = {} })
         self.activityLogLoaded = false
-        HC.EventBus:Trigger("VE_ACTIVITY_LOG_UPDATED", { timestamp = nil })
+        HC.EventBus:Trigger("HC_ACTIVITY_LOG_UPDATED", { timestamp = nil })
         return
     end
 
@@ -682,7 +682,7 @@ function Tracker:ProcessInitiativeInfo(info)
             HC.EndeavorTracker:FetchEndeavorData()  -- Re-process to get coupon data
         end)
     end
-    -- SaveCurrentCharacterProgress removed - handled by VE_STATE_CHANGED listener with 0.5s debounce
+    -- SaveCurrentCharacterProgress removed - handled by HC_STATE_CHANGED listener with 0.5s debounce
 end
 
 -- Extract current progress from task requirements
@@ -746,10 +746,10 @@ function Tracker:GetTaskCouponReward(task)
     -- Check for tracked actual reward (from CURRENCY_DISPLAY_UPDATE correlation)
     -- History is stored as array: { {amount, timestamp, character}, ... }
     -- Clear old format (single number) if found
-    VE_DB = VE_DB or {}
-    local history = VE_DB.taskActualCoupons and VE_DB.taskActualCoupons[taskName]
+    HC_DB = HC_DB or {}
+    local history = HC_DB.taskActualCoupons and HC_DB.taskActualCoupons[taskName]
     if history and type(history) ~= "table" then
-        VE_DB.taskActualCoupons[taskName] = nil  -- Clear old format
+        HC_DB.taskActualCoupons[taskName] = nil  -- Clear old format
         history = nil
     end
     local actual = history and #history > 0 and history[#history].amount
@@ -828,8 +828,8 @@ function Tracker:GetTaskTotalHouseXPEarned(task)
     local logInfo = self:GetActivityLogData()
     if not logInfo or not logInfo.taskActivity then return 0 end
 
-    VE_DB = VE_DB or {}
-    local myChars = VE_DB.myCharacters or {}
+    HC_DB = HC_DB or {}
+    local myChars = HC_DB.myCharacters or {}
 
     local total = 0
     local lastKnown = nil  -- {contribution, timestamp} for this task
@@ -881,8 +881,8 @@ function Tracker:GetTotalHouseXPEarned()
         return 0, { preRaw = 0, preCapped = 0, post = 0, preCap = PRE_JAN29_CAP, postCap = POST_JAN29_CAP }
     end
 
-    VE_DB = VE_DB or {}
-    local myChars = VE_DB.myCharacters or {}
+    HC_DB = HC_DB or {}
+    local myChars = HC_DB.myCharacters or {}
 
     -- Debug: show what we're working with
     if debug then
@@ -1201,7 +1201,7 @@ end
 
 -- Refresh activity log cache - called only from controlled trigger points:
 -- 1. OnShow (when window opens)
--- 2. INITIATIVE_TASK_COMPLETED (when player completes a task)
+-- 2. INITIATIHC_TASK_COMPLETED (when player completes a task)
 -- 3. Manual refresh button
 function Tracker:RefreshActivityLogCache()
     if not C_NeighborhoodInitiative then return end
@@ -1225,7 +1225,7 @@ function Tracker:RefreshActivityLogCache()
     -- Pre-calculate expensive values ONCE (avoids 23K+ iterations per UI update)
     self:PreCalculateActivityValues()
 
-    HC.EventBus:Trigger("VE_ACTIVITY_LOG_UPDATED", { timestamp = self.activityLogLastUpdated })
+    HC.EventBus:Trigger("HC_ACTIVITY_LOG_UPDATED", { timestamp = self.activityLogLastUpdated })
 end
 
 -- Pre-calculate player contribution and house XP from cached activity log
@@ -1263,9 +1263,9 @@ function Tracker:PreCalculateActivityValues()
     -- Persist per-house XP data so switching houses shows correct values immediately
     local guid = self.currentHouseGUID
     if guid then
-        VE_DB = VE_DB or {}
-        VE_DB.houseData = VE_DB.houseData or {}
-        VE_DB.houseData[guid] = {
+        HC_DB = HC_DB or {}
+        HC_DB.houseData = HC_DB.houseData or {}
+        HC_DB.houseData[guid] = {
             houseXP = houseXP,
             playerContribution = playerContrib,
             lastUpdated = time(),
@@ -1284,7 +1284,7 @@ end
 
 -- Debug: Force cache refresh test (use /hc testxp)
 function Tracker:TestHouseXPRefresh()
-    print("|cFFffd700[VE Test]|r Simulating INITIATIVE_TASK_COMPLETED flow...")
+    print("|cFFffd700[VE Test]|r Simulating INITIATIHC_TASK_COMPLETED flow...")
 
     -- Capture state before
     local oldXP = self.cachedHouseXP or 0
@@ -1292,7 +1292,7 @@ function Tracker:TestHouseXPRefresh()
     local oldDisplayText = mainFrame and mainFrame.houseXpText and mainFrame.houseXpText:GetText() or "?"
     print(string.format("|cFFffd700[VE Test]|r BEFORE - Cache: %.1f, UI Display: %s", oldXP, oldDisplayText))
 
-    -- Simulate exact INITIATIVE_TASK_COMPLETED flow (lines 176-183)
+    -- Simulate exact INITIATIHC_TASK_COMPLETED flow (lines 176-183)
     print("|cFFffd700[VE Test]|r Step 1: RefreshActivityLogCache()...")
     self:RefreshActivityLogCache()
 
@@ -1390,14 +1390,14 @@ function Tracker:GetPlayerCompletionCount(taskID)
 end
 
 -- Count completions across ALL of the user's characters (account-wide)
--- DR is account-based, so we sum completions from all alts in VE_DB.myCharacters
+-- DR is account-based, so we sum completions from all alts in HC_DB.myCharacters
 function Tracker:GetAccountCompletionCount(taskID)
     local logInfo = self:GetActivityLogData()
     if not logInfo or not logInfo.taskActivity then return 0 end
 
     -- Get list of user's characters (populated on login from Leaderboard/Activity tabs)
-    VE_DB = VE_DB or {}
-    local myChars = VE_DB.myCharacters or {}
+    HC_DB = HC_DB or {}
+    local myChars = HC_DB.myCharacters or {}
 
     local count = 0
     for _, entry in ipairs(logInfo.taskActivity) do
@@ -1434,22 +1434,22 @@ end
 function Tracker:ResetTaskRules()
     self.taskRules = {}
     -- Clean up legacy SavedVariables data
-    if VE_DB then
-        VE_DB.taskRules = nil
-        VE_DB.learnedFormula = nil
-        VE_DB.formulaCheckpoint = nil
+    if HC_DB then
+        HC_DB.taskRules = nil
+        HC_DB.learnedFormula = nil
+        HC_DB.formulaCheckpoint = nil
     end
 end
 
 -- Load learned values on init
 function Tracker:LoadLearnedValues()
-    -- taskRules rebuilt from activity log on INITIATIVE_ACTIVITY_LOG_UPDATED - no persistence needed
+    -- taskRules rebuilt from activity log on INITIATIHC_ACTIVITY_LOG_UPDATED - no persistence needed
     self.taskRules = {}
     -- Clean up legacy SavedVariables data
-    if VE_DB then
-        VE_DB.learnedFormula = nil
-        VE_DB.taskRules = nil
-        VE_DB.formulaCheckpoint = nil
+    if HC_DB then
+        HC_DB.learnedFormula = nil
+        HC_DB.taskRules = nil
+        HC_DB.formulaCheckpoint = nil
     end
 end
 
@@ -1595,17 +1595,17 @@ end
 function Tracker:SaveNeighborhoodScale(scale)
     local guid = self:GetViewingNeighborhoodGUID()
     if not guid then return end
-    VE_DB = VE_DB or {}
-    VE_DB.neighborhoodScales = VE_DB.neighborhoodScales or {}
-    VE_DB.neighborhoodScales[guid] = { scale = scale, timestamp = time() }
+    HC_DB = HC_DB or {}
+    HC_DB.neighborhoodScales = HC_DB.neighborhoodScales or {}
+    HC_DB.neighborhoodScales[guid] = { scale = scale, timestamp = time() }
 end
 
 -- Retrieve previously saved scale for current neighborhood
 function Tracker:GetSavedNeighborhoodScale()
     local guid = self:GetViewingNeighborhoodGUID()
     if not guid then return nil end
-    VE_DB = VE_DB or {}
-    local saved = VE_DB.neighborhoodScales and VE_DB.neighborhoodScales[guid]
+    HC_DB = HC_DB or {}
+    local saved = HC_DB.neighborhoodScales and HC_DB.neighborhoodScales[guid]
     if saved then return saved.scale end
     return nil
 end
@@ -1996,8 +1996,8 @@ function Tracker:SelectHouse(index)
     self.selectedHouseIndex = index
     self.lastManualSelectionTime = GetTime()  -- Track when user manually changed selection
     -- Persist selection by houseGUID (stable across sessions, not fragile index)
-    VE_DB = VE_DB or {}
-    VE_DB.selectedHouseGUID = houseInfo.houseGUID
+    HC_DB = HC_DB or {}
+    HC_DB.selectedHouseGUID = houseInfo.houseGUID
     self.currentHouseGUID = houseInfo.houseGUID
     local debug = HC.Store:GetState().config.debug
 
@@ -2015,8 +2015,8 @@ function Tracker:SelectHouse(index)
     self.taskRules = {}             -- Clear task rules - will rebuild from new house's activity log
 
     -- Load persisted per-house XP data for immediate display while API refreshes
-    VE_DB = VE_DB or {}
-    local savedHouseData = VE_DB.houseData and VE_DB.houseData[houseInfo.houseGUID]
+    HC_DB = HC_DB or {}
+    local savedHouseData = HC_DB.houseData and HC_DB.houseData[houseInfo.houseGUID]
     if savedHouseData then
         self.cachedPlayerContribution = savedHouseData.playerContribution or 0
         self.cachedHouseXP = savedHouseData.houseXP or 0
@@ -2028,7 +2028,7 @@ function Tracker:SelectHouse(index)
     if HC.Vamoose and HC.Vamoose.ResetTracking then
         HC.Vamoose.ResetTracking()  -- Reset quote tracking for new house
     end
-    HC.EventBus:Trigger("VE_ACTIVITY_LOG_UPDATED", { timestamp = nil })
+    HC.EventBus:Trigger("HC_ACTIVITY_LOG_UPDATED", { timestamp = nil })
 
     -- Update house GUID and request fresh level data for the selected house
     if houseInfo.houseGUID then
@@ -2044,7 +2044,7 @@ function Tracker:SelectHouse(index)
         C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()
         self:RequestActivityLog()
 
-        -- INITIATIVE_ACTIVITY_LOG_UPDATED only marks stale (line ~147), never caches.
+        -- INITIATIHC_ACTIVITY_LOG_UPDATED only marks stale (line ~147), never caches.
         -- Without this timer, switching houses left cachedActivityLog with old house's data.
         C_Timer.After(1.5, function()
             self:RefreshActivityLogCache()
@@ -2074,8 +2074,8 @@ function Tracker:SetAsActiveEndeavor()
 
         -- Load persisted per-house XP, will recalculate from activity log after API responds
         self.currentHouseGUID = houseInfo.houseGUID
-        VE_DB = VE_DB or {}
-        local savedHouseData = VE_DB.houseData and VE_DB.houseData[houseInfo.houseGUID]
+        HC_DB = HC_DB or {}
+        local savedHouseData = HC_DB.houseData and HC_DB.houseData[houseInfo.houseGUID]
         if savedHouseData then
             self.cachedPlayerContribution = savedHouseData.playerContribution or 0
             self.cachedHouseXP = savedHouseData.houseXP or 0
@@ -2093,7 +2093,7 @@ function Tracker:SetAsActiveEndeavor()
         self:UpdateFetchStatus("fetching", 0, nil)
 
         -- Notify UI that active neighborhood changed
-        HC.EventBus:Trigger("VE_ACTIVE_NEIGHBORHOOD_CHANGED")
+        HC.EventBus:Trigger("HC_ACTIHC_NEIGHBORHOOD_CHANGED")
 
         -- Request fresh data now that it's active
         C_NeighborhoodInitiative.RequestNeighborhoodInitiativeInfo()

@@ -102,7 +102,7 @@ function HC.Store:Dispatch(action, payload)
         local newState = reducer(self.state, payload)
         if newState then
             self.state = newState
-            HC.EventBus:Trigger("VE_STATE_CHANGED", { action = action, state = self.state })
+            HC.EventBus:Trigger("HC_STATE_CHANGED", { action = action, state = self.state })
             self:QueueSave()
         end
     else
@@ -117,39 +117,39 @@ end
 -- ============================================================================
 
 function HC.Store:LoadFromSavedVariables()
-    if not VE_DB then
-        VE_DB = {}
+    if not HC_DB then
+        HC_DB = {}
     end
 
     -- Restore config
-    if VE_DB.config then
-        for key, value in pairs(VE_DB.config) do
+    if HC_DB.config then
+        for key, value in pairs(HC_DB.config) do
             self.state.config[key] = value
         end
     end
 
     -- Restore character data
-    if VE_DB.characters then
-        self.state.characters = VE_DB.characters
+    if HC_DB.characters then
+        self.state.characters = HC_DB.characters
     end
 
     -- Restore UI state
-    if VE_DB.ui then
-        self.state.ui.selectedCharacter = VE_DB.ui.selectedCharacter
+    if HC_DB.ui then
+        self.state.ui.selectedCharacter = HC_DB.ui.selectedCharacter
     end
 
     -- Restore known initiatives (account-wide collection)
-    if VE_DB.knownInitiatives then
-        self.state.knownInitiatives = VE_DB.knownInitiatives
+    if HC_DB.knownInitiatives then
+        self.state.knownInitiatives = HC_DB.knownInitiatives
     end
 
     -- Restore alt sharing state
-    if VE_DB.altSharing then
-        self.state.altSharing.enabled = VE_DB.altSharing.enabled or false
-        self.state.altSharing.mainCharacter = VE_DB.altSharing.mainCharacter
+    if HC_DB.altSharing then
+        self.state.altSharing.enabled = HC_DB.altSharing.enabled or false
+        self.state.altSharing.mainCharacter = HC_DB.altSharing.mainCharacter
         -- Don't restore lastBroadcast - allow fresh broadcast each session
-        self.state.altSharing.receivedMappings = VE_DB.altSharing.receivedMappings or {}
-        self.state.altSharing.groupingMode = VE_DB.altSharing.groupingMode or "individual"
+        self.state.altSharing.receivedMappings = HC_DB.altSharing.receivedMappings or {}
+        self.state.altSharing.groupingMode = HC_DB.altSharing.groupingMode or "individual"
     end
 
     if self.state.config.debug then
@@ -167,10 +167,10 @@ function HC.Store:QueueSave()
 end
 
 function HC.Store:SaveToSavedVariables()
-    VE_DB = VE_DB or {}
+    HC_DB = HC_DB or {}
 
     -- Save config
-    VE_DB.config = {
+    HC_DB.config = {
         debug = self.state.config.debug,
         showMinimapButton = self.state.config.showMinimapButton,
         showDashboardButton = self.state.config.showDashboardButton,
@@ -184,17 +184,17 @@ function HC.Store:SaveToSavedVariables()
     }
 
     -- Save character data (persistent across sessions)
-    VE_DB.characters = self.state.characters
+    HC_DB.characters = self.state.characters
 
     -- Save UI state (merge to preserve taskSort, showRewardsHighlight)
-    VE_DB.ui = VE_DB.ui or {}
-    VE_DB.ui.selectedCharacter = self.state.ui.selectedCharacter
+    HC_DB.ui = HC_DB.ui or {}
+    HC_DB.ui.selectedCharacter = self.state.ui.selectedCharacter
 
     -- Save known initiatives (account-wide collection)
-    VE_DB.knownInitiatives = self.state.knownInitiatives
+    HC_DB.knownInitiatives = self.state.knownInitiatives
 
     -- Save alt sharing state
-    VE_DB.altSharing = {
+    HC_DB.altSharing = {
         enabled = self.state.altSharing.enabled,
         mainCharacter = self.state.altSharing.mainCharacter,
         lastBroadcast = self.state.altSharing.lastBroadcast,

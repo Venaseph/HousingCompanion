@@ -205,7 +205,7 @@ function HC.UI.Tabs:CreateInfo(parent)
         self:BuildGuide()
     end
 
-    HC.EventBus:Register("VE_STATE_CHANGED", function(payload)
+    HC.EventBus:Register("HC_STATE_CHANGED", function(payload)
         if payload.action == "SET_CONFIG" and payload.state.config.theme then
             container:ApplyTheme()
         end

@@ -1,5 +1,5 @@
 -- ============================================================================
--- VE_signatures.lua - API Reference
+-- HC_signatures.lua - API Reference
 -- Function signatures for VamoosesEndeavors addon
 -- ============================================================================
 
@@ -9,9 +9,9 @@
 
 HC.Store:GetState()                                  -- Returns current state table
 HC.Store:RegisterReducer(action, reducerFn)          -- Register a reducer function for an action type
-HC.Store:Dispatch(action, payload)                   -- Dispatch action to update state, triggers VE_STATE_CHANGED event
-HC.Store:LoadFromSavedVariables()                    -- Load persisted state from VE_DB SavedVariables
-HC.Store:SaveToSavedVariables()                      -- Save current state to VE_DB SavedVariables
+HC.Store:Dispatch(action, payload)                   -- Dispatch action to update state, triggers HC_STATE_CHANGED event
+HC.Store:LoadFromSavedVariables()                    -- Load persisted state from HC_DB SavedVariables
+HC.Store:SaveToSavedVariables()                      -- Save current state to HC_DB SavedVariables
 HC.Store:QueueSave()                                 -- Queue a debounced save (1 second delay)
 HC.Store:Flush()                                     -- Cancel pending save timer and save immediately
 
@@ -34,9 +34,9 @@ HC.EventBus:Trigger(event, payload)                  -- Fire event with optional
 HC.EventBus:Unregister(event, callback)              -- Remove specific callback, returns true/false
 
 -- Internal events:
--- "VE_STATE_CHANGED"          { action, state }     -- Fired after Store:Dispatch
--- "VE_THEME_UPDATE"           { themeName }         -- Theme changed
--- "VE_ACTIVITY_LOG_UPDATED"                         -- Activity log data received
+-- "HC_STATE_CHANGED"          { action, state }     -- Fired after Store:Dispatch
+-- "HC_THEME_UPDATE"           { themeName }         -- Theme changed
+-- "HC_ACTIVITY_LOG_UPDATED"                         -- Activity log data received
 
 -- ============================================================================
 -- Constants.lua - Theme and UI constants
@@ -84,7 +84,7 @@ HC.UI:ColorCode(colorName)                           -- Returns WoW color code f
 -- ThemeEngine.lua - Live theme switching
 -- ============================================================================
 
-HC.Theme:Initialize()                                -- Initialize theme engine, listen for VE_THEME_UPDATE
+HC.Theme:Initialize()                                -- Initialize theme engine, listen for HC_THEME_UPDATE
 HC.Theme:Register(widget, widgetType)                -- Register widget for theme updates
 HC.Theme:UpdateAll()                                 -- Re-skin all registered widgets with current scheme
 HC.Theme:GetScheme()                                 -- Returns current color scheme table

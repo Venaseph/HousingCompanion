@@ -73,7 +73,7 @@ function HC.UI.Tabs:CreateActivity(parent)
     end)
 
     -- Update timestamp when activity log refreshes
-    HC.EventBus:Register("VE_ACTIVITY_LOG_UPDATED", function()
+    HC.EventBus:Register("HC_ACTIVITY_LOG_UPDATED", function()
         lastUpdateText:SetText(date("%H:%M"))
     end)
 
@@ -317,7 +317,7 @@ function HC.UI.Tabs:CreateActivity(parent)
     couponBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
         GameTooltip:SetText("Toggle: Coupon Earnings")
-        local gainCount = VE_DB and VE_DB.couponGains and #VE_DB.couponGains or 0
+        local gainCount = HC_DB and HC_DB.couponGains and #HC_DB.couponGains or 0
         GameTooltip:AddLine(container.showCouponView
             and "Click to show activity log"
             or ("Click to show coupon earnings (" .. gainCount .. " tracked)"), 0.7, 0.7, 0.7)
@@ -388,7 +388,7 @@ function HC.UI.Tabs:CreateActivity(parent)
     end
 
     -- Task filter dropdown menu
-    local taskDropdown = CreateFrame("Frame", "VE_TaskFilterDropdown", taskFilterBtn, "BackdropTemplate")
+    local taskDropdown = CreateFrame("Frame", "HC_TaskFilterDropdown", taskFilterBtn, "BackdropTemplate")
     taskDropdown:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",
         edgeFile = "Interface\\Buttons\\WHITE8x8",
@@ -876,8 +876,8 @@ function HC.UI.Tabs:CreateActivity(parent)
             if self.noResultsText then self.noResultsText:Hide() end
 
             -- Get coupon gains data
-            VE_DB = VE_DB or {}
-            local couponGains = VE_DB.couponGains or {}
+            HC_DB = HC_DB or {}
+            local couponGains = HC_DB.couponGains or {}
 
             if #couponGains == 0 then
                 -- Show "no data" message
@@ -1035,12 +1035,12 @@ function HC.UI.Tabs:CreateActivity(parent)
         local currentPlayer = UnitName("player")
 
         -- Build set of known character names for "My Chars" filter
-        -- Uses VE_DB.myCharacters (same as Leaderboard tab) which persists all logged-in alts
+        -- Uses HC_DB.myCharacters (same as Leaderboard tab) which persists all logged-in alts
         local myCharNames = {}
         if self.filterMyChars then
-            VE_DB = VE_DB or {}
-            VE_DB.myCharacters = VE_DB.myCharacters or {}
-            for charName, _ in pairs(VE_DB.myCharacters) do
+            HC_DB = HC_DB or {}
+            HC_DB.myCharacters = HC_DB.myCharacters or {}
+            for charName, _ in pairs(HC_DB.myCharacters) do
                 myCharNames[charName] = true
             end
             -- Always include current player
@@ -1118,21 +1118,21 @@ function HC.UI.Tabs:CreateActivity(parent)
     end)
 
     -- Listen for activity log updates
-    HC.EventBus:Register("VE_ACTIVITY_LOG_UPDATED", function()
+    HC.EventBus:Register("HC_ACTIVITY_LOG_UPDATED", function()
         if container:IsShown() then
             container:Update()
         end
     end)
 
     -- Listen for active neighborhood changes (when user clicks "Set as Active")
-    HC.EventBus:Register("VE_ACTIVE_NEIGHBORHOOD_CHANGED", function()
+    HC.EventBus:Register("HC_ACTIHC_NEIGHBORHOOD_CHANGED", function()
         if container:IsShown() then
             container:Update()
         end
     end)
 
     -- Listen for theme updates to refresh colors
-    HC.EventBus:Register("VE_THEME_UPDATE", function()
+    HC.EventBus:Register("HC_THEME_UPDATE", function()
         ApplyContainerColors()
         -- Update filter button appearances
         if container.meOnlyBtn then container.meOnlyBtn:UpdateAppearance() end

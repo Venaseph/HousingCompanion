@@ -13,7 +13,7 @@ HC.Vamoose = {}
 -- Custom talking head display for endeavor quotes
 -- ============================================================================
 
-local VamooseHead = CreateFrame("Frame", "VE_VamooseTalkingHead", UIParent)
+local VamooseHead = CreateFrame("Frame", "HC_VamooseTalkingHead", UIParent)
 VamooseHead:SetSize(570, 155)
 VamooseHead:SetPoint("TOP", UIParent, "TOP", 0, -200)
 VamooseHead:Hide()

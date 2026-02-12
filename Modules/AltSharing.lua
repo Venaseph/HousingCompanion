@@ -8,7 +8,7 @@ HC = HC or {}
 HC.AltSharing = {}
 
 local AltSharing = HC.AltSharing
-local PREFIX = "VE_ALTS"
+local PREFIX = "HC_ALTS"
 local PROTOCOL_VERSION = 2  -- v2: BattleTag-based grouping
 local BROADCAST_INTERVAL = 300  -- 5 minutes between broadcasts
 local MAX_MESSAGE_LENGTH = 255
@@ -82,7 +82,7 @@ function AltSharing:Initialize()
     end)
 
     -- Listen for state changes to trigger broadcasts
-    HC.EventBus:Register("VE_STATE_CHANGED", function(payload)
+    HC.EventBus:Register("HC_STATE_CHANGED", function(payload)
         if payload.action == "SET_ALT_SHARING_ENABLED" or
            payload.action == "SET_MAIN_CHARACTER" then
             self:OnConfigChanged()
@@ -102,7 +102,7 @@ function AltSharing:Initialize()
     end)
 
     -- Listen for neighborhood changes to switch channels
-    HC.EventBus:Register("VE_NEIGHBORHOOD_CHANGED", function()
+    HC.EventBus:Register("HC_NEIGHBORHOOD_CHANGED", function()
         if HC.Store:GetState().altSharing.enabled then
             self:JoinNeighborhoodChannel()
         end
@@ -115,18 +115,18 @@ end
 
 -- Load BattleTag mappings from SavedVariables (enables cross-faction grouping)
 function AltSharing:LoadPersistedBattleTagData()
-    if not VE_DB then VE_DB = {} end
+    if not HC_DB then HC_DB = {} end
 
     -- Load persisted battleTagLookup: { [charName] = battleTag }
-    if VE_DB.battleTagLookup then
-        for charName, battleTag in pairs(VE_DB.battleTagLookup) do
+    if HC_DB.battleTagLookup then
+        for charName, battleTag in pairs(HC_DB.battleTagLookup) do
             self.battleTagLookup[charName] = battleTag
         end
     end
 
     -- Load persisted battleTagMains: { [battleTag] = { main1, main2, ... } }
-    if VE_DB.battleTagMains then
-        for battleTag, mains in pairs(VE_DB.battleTagMains) do
+    if HC_DB.battleTagMains then
+        for battleTag, mains in pairs(HC_DB.battleTagMains) do
             self.battleTagMains[battleTag] = mains
         end
     end
@@ -140,9 +140,9 @@ end
 
 -- Save BattleTag mappings to SavedVariables
 function AltSharing:SaveBattleTagData()
-    if not VE_DB then VE_DB = {} end
-    VE_DB.battleTagLookup = self.battleTagLookup
-    VE_DB.battleTagMains = self.battleTagMains
+    if not HC_DB then HC_DB = {} end
+    HC_DB.battleTagLookup = self.battleTagLookup
+    HC_DB.battleTagMains = self.battleTagMains
 end
 
 -- Get current neighborhood GUID
@@ -375,7 +375,7 @@ function AltSharing:BroadcastIfEnabled()
     local mainName = self:GetMainName()
     local charName = UnitName("player")
 
-    -- Format v2: VERSION^INITIATIVE_ID^BATTLETAGHASH^MAIN^CHARNAME
+    -- Format v2: VERSION^INITIATIHC_ID^BATTLETAGHASH^MAIN^CHARNAME
     local message = string.format("%d^%d^%s^%s^%s",
         PROTOCOL_VERSION, initiativeId, battleTagHash or "UNKNOWN", mainName, charName)
 
@@ -491,7 +491,7 @@ function AltSharing:OnAddonMessage(message, channel, sender)
         print("|cFF2aa198[VE AltSharing]|r Received from:", sender, "channel:", channel)
     end
 
-    -- Try v2 format first: VERSION^INITIATIVE_ID^BATTLETAG^MAIN^CHARNAME
+    -- Try v2 format first: VERSION^INITIATIHC_ID^BATTLETAG^MAIN^CHARNAME
     local version, initiativeId, battleTag, mainName, charName = message:match("^(%d+)%^(%d+)%^([^^]+)%^([^^]+)%^(.+)$")
 
     if version and tonumber(version) >= 2 then
@@ -523,7 +523,7 @@ function AltSharing:OnAddonMessage(message, channel, sender)
         self:BuildAltToMainLookup()
 
         -- Notify leaderboard to update
-        HC.EventBus:Trigger("VE_ALT_MAPPING_UPDATED")
+        HC.EventBus:Trigger("HC_ALT_MAPPING_UPDATED")
 
         if debug then
             print("|cFF2aa198[VE AltSharing]|r v2 BattleTag:", battleTag, "main:", mainName, "char:", charName)
@@ -531,7 +531,7 @@ function AltSharing:OnAddonMessage(message, channel, sender)
         return
     end
 
-    -- Fall back to v1 format: VERSION^INITIATIVE_ID^MAIN-REALM^ALT1-REALM,ALT2-REALM,...
+    -- Fall back to v1 format: VERSION^INITIATIHC_ID^MAIN-REALM^ALT1-REALM,ALT2-REALM,...
     local v1version, v1initiativeId, mainChar, altsStr = message:match("^(%d+)%^(%d+)%^([^^]+)%^(.*)$")
     if not v1version then return end
 
@@ -569,7 +569,7 @@ function AltSharing:OnAddonMessage(message, channel, sender)
     self:BuildAltToMainLookup()
 
     -- Notify leaderboard to update
-    HC.EventBus:Trigger("VE_ALT_MAPPING_UPDATED")
+    HC.EventBus:Trigger("HC_ALT_MAPPING_UPDATED")
 
     if debug then
         print("|cFF2aa198[VE AltSharing]|r v1 mapping from", mainChar, "with", #alts, "alts")
@@ -624,8 +624,8 @@ function AltSharing:BuildAltToMainLookup()
         self.battleTagMains[ourBattleTagHash] = { ourConfiguredMain }
     end
 
-    -- Add from VE_DB.myCharacters (all logged-in characters)
-    local myChars = VE_DB and VE_DB.myCharacters or {}
+    -- Add from HC_DB.myCharacters (all logged-in characters)
+    local myChars = HC_DB and HC_DB.myCharacters or {}
     for charName, _ in pairs(myChars) do
         self.altToMainLookup[charName] = ourMain
         self.knownAddonUsers[charName] = true  -- Our alts have the addon

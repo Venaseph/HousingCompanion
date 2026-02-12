@@ -321,7 +321,7 @@ function HC.UI:CreateMainFrame(name, title)
 
         -- Trigger theme update event (Theme Engine will re-skin all registered widgets)
         if HC.EventBus then
-            HC.EventBus:Trigger("VE_THEME_UPDATE", { themeName = themeName })
+            HC.EventBus:Trigger("HC_THEME_UPDATE", { themeName = themeName })
         end
 
         UpdateThemeIcon()
@@ -668,38 +668,38 @@ function HC.UI:CreateTaskRow(parent, options)
         local taskName = self.task.name
         if not taskName then return end
         -- Load current favourites
-        VE_DB = VE_DB or {}
-        VE_DB.ui = VE_DB.ui or {}
-        VE_DB.ui.favouriteTasks = VE_DB.ui.favouriteTasks or {}
+        HC_DB = HC_DB or {}
+        HC_DB.ui = HC_DB.ui or {}
+        HC_DB.ui.favouriteTasks = HC_DB.ui.favouriteTasks or {}
         -- Toggle
-        if VE_DB.ui.favouriteTasks[taskName] then
-            VE_DB.ui.favouriteTasks[taskName] = nil
+        if HC_DB.ui.favouriteTasks[taskName] then
+            HC_DB.ui.favouriteTasks[taskName] = nil
             self:SetFavourite(false)
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         else
             -- Count current favourites
             local count = 0
-            for _ in pairs(VE_DB.ui.favouriteTasks) do count = count + 1 end
+            for _ in pairs(HC_DB.ui.favouriteTasks) do count = count + 1 end
             if count >= 5 then
                 print("|cFFFFCC00[VE]|r Maximum 5 favourites allowed (minimized view limit)")
                 return
             end
-            VE_DB.ui.favouriteTasks[taskName] = true
+            HC_DB.ui.favouriteTasks[taskName] = true
             self:SetFavourite(true)
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         end
         -- Notify minimized view to update
-        HC.EventBus:Trigger("VE_FAVOURITES_CHANGED")
+        HC.EventBus:Trigger("HC_FAVOURITES_CHANGED")
     end
 
     -- Check if task is already favourited
     function row:CheckFavourite()
         if not self.task or not self.task.name then return end
-        VE_DB = VE_DB or {}
-        VE_DB.ui = VE_DB.ui or {}
-        VE_DB.ui.favouriteTasks = VE_DB.ui.favouriteTasks or {}
+        HC_DB = HC_DB or {}
+        HC_DB.ui = HC_DB.ui or {}
+        HC_DB.ui.favouriteTasks = HC_DB.ui.favouriteTasks or {}
         -- Use truthy check (consistent with minimized view)
-        local isFav = VE_DB.ui.favouriteTasks[self.task.name] and true or false
+        local isFav = HC_DB.ui.favouriteTasks[self.task.name] and true or false
         self:SetFavourite(isFav)
     end
 
@@ -1421,7 +1421,7 @@ function HC.UI:ShowCSVExportWindow(csvText, rowCount)
 
     -- Reuse existing window or create new
     if not HC.csvExportWindow then
-        local window = CreateFrame("Frame", "VE_CSVExportWindow", UIParent, "BackdropTemplate")
+        local window = CreateFrame("Frame", "HC_CSVExportWindow", UIParent, "BackdropTemplate")
         window:SetSize(500, 400)
         window:SetPoint("CENTER")
         window:SetFrameStrata("DIALOG")

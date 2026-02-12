@@ -36,8 +36,8 @@ function HC.Theme:Initialize()
     local themeKey = "housingtheme"
     if HC.Store and HC.Store.state and HC.Store.state.config then
         themeKey = HC.Store.state.config.theme or "housingtheme"
-    elseif VE_DB and VE_DB.config and VE_DB.config.theme then
-        themeKey = VE_DB.config.theme or "housingtheme"
+    elseif HC_DB and HC_DB.config and HC_DB.config.theme then
+        themeKey = HC_DB.config.theme or "housingtheme"
     end
     -- Convert key to scheme name using ThemeNames lookup
     local themeName = HC.Constants.ThemeNames[themeKey] or "HousingTheme"
@@ -45,7 +45,7 @@ function HC.Theme:Initialize()
 
     -- Listen for theme update events
     if HC.EventBus then
-        HC.EventBus:Register("VE_THEME_UPDATE", function(payload)
+        HC.EventBus:Register("HC_THEME_UPDATE", function(payload)
             -- Only change scheme if themeName explicitly provided
             if payload.themeName then
                 self.currentScheme = HC.Colors.Schemes[payload.themeName] or HC.Colors.Schemes.SolarizedDark
