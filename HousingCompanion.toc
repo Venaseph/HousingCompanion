@@ -1,0 +1,55 @@
+## Interface: 120001
+## Title: Housing Companion
+## Notes: Your complete housing guide - Endeavors, Rewards, and Vendors all in one place!
+## Author: Vamoose, Bettiold, Midnitedestiny (Combined)
+## Version: 2.0.0
+## SavedVariables: HC_DB, hc_settings, dbHC
+## IconTexture: Interface\Icons\Garrison_Building_Storehouse
+## Category-enUS: Housing
+## AddonCompartmentFunc: HousingCompanion_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: HousingCompanion_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: HousingCompanion_OnAddonCompartmentLeave
+## OptionalDeps: TomTom, WaypointUI
+
+# Library files
+Libs/LibStub.lua
+Libs/CallbackHandler-1.0.lua
+Libs/LibDataBroker-1.1.lua
+Libs/LibDBIcon-1.0.lua
+
+# Core
+Core/SchemeConstants.lua
+Core/Constants.lua
+Core/EventBus.lua
+Core/Store.lua
+Core/Init.lua
+
+# Data
+Data/VE_EndeavorQuotes.lua
+Data/HB_VendorData.lua
+Data/DV_VendorFilters.lua
+Data/HC_RepData.lua
+Data/HR_RepData.lua
+
+# Modules
+Modules/EndeavorTracker.lua
+Modules/HousingTracker.lua
+Modules/AltSharing.lua
+Modules/RewardsTracker.lua
+Modules/VendorFinder.lua
+Modules/RepTracker.lua
+
+# UI
+UI/ThemeEngine.lua
+UI/Framework.lua
+UI/MainFrame.lua
+UI/Minimap.lua
+UI/Vamoose.lua
+UI/Tabs/Endeavors.lua
+UI/Tabs/Leaderboard.lua
+UI/Tabs/Activity.lua
+UI/Tabs/Rewards.lua
+UI/Tabs/Vendors.lua
+UI/Tabs/Reputations.lua
+UI/Tabs/Info.lua
+UI/Tabs/Config.lua

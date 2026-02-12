@@ -1,0 +1,394 @@
+-- ============================================================================
+-- Vamoose's Endeavors - Store
+-- Redux-lite state management with reducers and persistence
+-- ============================================================================
+
+HC = HC or {}
+
+-- Default state template
+local DEFAULT_STATE = {
+    config = {
+        debug = false,
+        showMinimapButton = true,
+        showDashboardButton = true,
+        theme = "housingtheme",  -- "dark", "light", "housingtheme", etc.
+        fontFamily = "ARIALN",  -- FRIZQT__, ARIALN, skurri, MORPHEUS
+        fontScale = 0,  -- -4 to +8 offset applied to all font sizes
+        uiScale = 1.0,  -- 0.8 to 1.4 multiplier for entire UI
+        bgOpacity = 0.9,  -- 0.3 to 1.0 background transparency
+        quotesEnabled = true,  -- Squirrel quote talking head
+        quotesOnlyChat = false,  -- true = chat only, false = talking head
+    },
+    -- Current endeavor season info
+    endeavor = {
+        seasonName = "",           -- "Reaching Beyond the Possible"
+        seasonEndTime = 0,         -- Unix timestamp when season ends
+        daysRemaining = 0,
+        currentProgress = 0,       -- Current endeavor progress points
+        maxProgress = 0,           -- Max points for full completion
+        milestones = {},           -- Array of { threshold, reached }
+    },
+    -- Endeavor tasks list
+    tasks = {},  -- Array of { id, name, description, points, completed, current, max }
+    -- Per-character progress tracking
+    characters = {
+        -- ["CharName-Realm"] = {
+        --     name = "CharName",
+        --     realm = "Realm",
+        --     class = "WARRIOR",
+        --     lastUpdated = timestamp,
+        --     tasks = { [taskId] = { completed, current, max } }
+        -- }
+    },
+    -- UI state
+    ui = {
+        selectedCharacter = nil,  -- Currently viewed character key
+    },
+    -- Housing state (house level, coupons)
+    housing = {
+        houseGUID = nil,
+        level = 0,
+        xp = 0,
+        xpForNextLevel = 0,
+        maxLevel = 50,
+        coupons = 0,
+        couponsIcon = nil,
+    },
+    -- Known initiative types (collected over time)
+    knownInitiatives = {},  -- {[initiativeID] = {title, firstSeen, lastSeen}}
+    -- Alt sharing for neighborhood leaderboards
+    altSharing = {
+        enabled = false,              -- Consent toggle (opt-in)
+        mainCharacter = nil,          -- "CharName-RealmName" format
+        lastBroadcast = 0,            -- Timestamp of last broadcast
+        receivedMappings = {},        -- { ["Main-Realm"] = { alts = {...}, initiativeId = id } }
+        groupingMode = "individual",  -- "individual" or "byMain"
+    },
+}
+
+-- Deep copy helper
+local function DeepCopy(orig)
+    local copy
+    if type(orig) == "table" then
+        copy = {}
+        for k, v in pairs(orig) do
+            copy[k] = DeepCopy(v)
+        end
+    else
+        copy = orig
+    end
+    return copy
+end
+
+HC.Store = {
+    state = DeepCopy(DEFAULT_STATE),
+    reducers = {},
+    saveTimer = nil,
+}
+
+function HC.Store:GetState()
+    return self.state
+end
+
+function HC.Store:RegisterReducer(action, reducerFn)
+    self.reducers[action] = reducerFn
+end
+
+function HC.Store:Dispatch(action, payload)
+    -- Note: Store dispatch logging removed - too verbose even for debug mode
+
+    local reducer = self.reducers[action]
+    if reducer then
+        local newState = reducer(self.state, payload)
+        if newState then
+            self.state = newState
+            HC.EventBus:Trigger("VE_STATE_CHANGED", { action = action, state = self.state })
+            self:QueueSave()
+        end
+    else
+        if self.state.config.debug then
+            print("|cFFdc322f[HC Store]|r No reducer found for:", action)
+        end
+    end
+end
+
+-- ============================================================================
+-- SAVEDVARIABLES PERSISTENCE
+-- ============================================================================
+
+function HC.Store:LoadFromSavedVariables()
+    if not VE_DB then
+        VE_DB = {}
+    end
+
+    -- Restore config
+    if VE_DB.config then
+        for key, value in pairs(VE_DB.config) do
+            self.state.config[key] = value
+        end
+    end
+
+    -- Restore character data
+    if VE_DB.characters then
+        self.state.characters = VE_DB.characters
+    end
+
+    -- Restore UI state
+    if VE_DB.ui then
+        self.state.ui.selectedCharacter = VE_DB.ui.selectedCharacter
+    end
+
+    -- Restore known initiatives (account-wide collection)
+    if VE_DB.knownInitiatives then
+        self.state.knownInitiatives = VE_DB.knownInitiatives
+    end
+
+    -- Restore alt sharing state
+    if VE_DB.altSharing then
+        self.state.altSharing.enabled = VE_DB.altSharing.enabled or false
+        self.state.altSharing.mainCharacter = VE_DB.altSharing.mainCharacter
+        -- Don't restore lastBroadcast - allow fresh broadcast each session
+        self.state.altSharing.receivedMappings = VE_DB.altSharing.receivedMappings or {}
+        self.state.altSharing.groupingMode = VE_DB.altSharing.groupingMode or "individual"
+    end
+
+    if self.state.config.debug then
+        print("|cFF2aa198[HC Store]|r Loaded state from SavedVariables")
+    end
+end
+
+function HC.Store:QueueSave()
+    if self.saveTimer then
+        self.saveTimer:Cancel()
+    end
+    self.saveTimer = C_Timer.NewTimer(1, function()
+        self:SaveToSavedVariables()
+    end)
+end
+
+function HC.Store:SaveToSavedVariables()
+    VE_DB = VE_DB or {}
+
+    -- Save config
+    VE_DB.config = {
+        debug = self.state.config.debug,
+        showMinimapButton = self.state.config.showMinimapButton,
+        showDashboardButton = self.state.config.showDashboardButton,
+        theme = self.state.config.theme,
+        fontFamily = self.state.config.fontFamily,
+        fontScale = self.state.config.fontScale,
+        uiScale = self.state.config.uiScale,
+        bgOpacity = self.state.config.bgOpacity,
+        quotesEnabled = self.state.config.quotesEnabled,
+        quotesOnlyChat = self.state.config.quotesOnlyChat,
+    }
+
+    -- Save character data (persistent across sessions)
+    VE_DB.characters = self.state.characters
+
+    -- Save UI state (merge to preserve taskSort, showRewardsHighlight)
+    VE_DB.ui = VE_DB.ui or {}
+    VE_DB.ui.selectedCharacter = self.state.ui.selectedCharacter
+
+    -- Save known initiatives (account-wide collection)
+    VE_DB.knownInitiatives = self.state.knownInitiatives
+
+    -- Save alt sharing state
+    VE_DB.altSharing = {
+        enabled = self.state.altSharing.enabled,
+        mainCharacter = self.state.altSharing.mainCharacter,
+        lastBroadcast = self.state.altSharing.lastBroadcast,
+        receivedMappings = self.state.altSharing.receivedMappings,
+        groupingMode = self.state.altSharing.groupingMode,
+    }
+
+    if self.state.config.debug then
+        print("|cFF2aa198[HC Store]|r Saved state to SavedVariables")
+    end
+end
+
+function HC.Store:Flush()
+    if self.saveTimer then
+        self.saveTimer:Cancel()
+        self.saveTimer = nil
+    end
+    self:SaveToSavedVariables()
+end
+
+-- ============================================================================
+-- REDUCERS
+-- ============================================================================
+
+-- SET_CONFIG: Update a config value
+HC.Store:RegisterReducer("SET_CONFIG", function(state, payload)
+    local newState = DeepCopy(state)
+    if payload.key then
+        newState.config[payload.key] = payload.value
+    end
+    return newState
+end)
+
+-- SET_ENDEAVOR_INFO: Update current endeavor season info
+HC.Store:RegisterReducer("SET_ENDEAVOR_INFO", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.endeavor = {
+        seasonName = payload.seasonName or state.endeavor.seasonName,
+        seasonEndTime = payload.seasonEndTime or state.endeavor.seasonEndTime,
+        daysRemaining = payload.daysRemaining or state.endeavor.daysRemaining,
+        currentProgress = payload.currentProgress or state.endeavor.currentProgress,
+        maxProgress = payload.maxProgress or state.endeavor.maxProgress,
+        milestones = payload.milestones or state.endeavor.milestones,
+    }
+    return newState
+end)
+
+-- SET_TASKS: Update the endeavor tasks list
+HC.Store:RegisterReducer("SET_TASKS", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.tasks = payload.tasks or {}
+    return newState
+end)
+
+-- UPDATE_CHARACTER_PROGRESS: Save current character's task progress
+HC.Store:RegisterReducer("UPDATE_CHARACTER_PROGRESS", function(state, payload)
+    local newState = DeepCopy(state)
+    local charKey = payload.charKey
+
+    newState.characters[charKey] = {
+        name = payload.name,
+        realm = payload.realm,
+        class = payload.class,
+        lastUpdated = time(),
+        tasks = payload.tasks or {},
+    }
+
+    return newState
+end)
+
+-- SET_SELECTED_CHARACTER: Change which character is being viewed
+HC.Store:RegisterReducer("SET_SELECTED_CHARACTER", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.ui.selectedCharacter = payload.charKey
+    return newState
+end)
+
+-- ============================================================================
+-- HOUSING REDUCERS
+-- ============================================================================
+
+-- SET_HOUSE_GUID: Cache the current house GUID
+HC.Store:RegisterReducer("SET_HOUSE_GUID", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.housing.houseGUID = payload.houseGUID
+    return newState
+end)
+
+-- SET_HOUSE_LEVEL: Update house level and XP
+HC.Store:RegisterReducer("SET_HOUSE_LEVEL", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.housing.level = payload.level or 0
+    newState.housing.xp = payload.xp or 0
+    newState.housing.xpForNextLevel = payload.xpForNextLevel or 0
+    newState.housing.maxLevel = payload.maxLevel or 50
+    return newState
+end)
+
+-- SET_COUPONS: Update community coupons count
+HC.Store:RegisterReducer("SET_COUPONS", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.housing.coupons = payload.count or 0
+    newState.housing.couponsIcon = payload.iconID
+    return newState
+end)
+
+-- SET_FONT_SCALE: Update font size offset (-4 to +8)
+HC.Store:RegisterReducer("SET_FONT_SCALE", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.config.fontScale = payload.scale or 0
+    return newState
+end)
+
+-- SET_UI_SCALE: Update UI scale multiplier (0.8 to 1.4)
+HC.Store:RegisterReducer("SET_UI_SCALE", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.config.uiScale = payload.scale or 1.0
+    return newState
+end)
+
+-- SET_BG_OPACITY: Update background opacity (0.3 to 1.0)
+HC.Store:RegisterReducer("SET_BG_OPACITY", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.config.bgOpacity = payload.opacity or 0.9
+    return newState
+end)
+
+-- RECORD_INITIATIVE: Track discovered initiative types
+HC.Store:RegisterReducer("RECORD_INITIATIVE", function(state, payload)
+    if not payload.initiativeID or payload.initiativeID == 0 then return state end
+    local newState = DeepCopy(state)
+    local id = payload.initiativeID
+    local existing = state.knownInitiatives[id]
+    newState.knownInitiatives[id] = {
+        title = payload.title or (existing and existing.title) or "Unknown",
+        description = payload.description or (existing and existing.description) or "",
+        firstSeen = existing and existing.firstSeen or time(),
+        lastSeen = time(),
+    }
+    return newState
+end)
+
+-- ============================================================================
+-- ALT SHARING REDUCERS
+-- ============================================================================
+
+-- SET_ALT_SHARING_ENABLED: Toggle consent for sharing alt data
+HC.Store:RegisterReducer("SET_ALT_SHARING_ENABLED", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.altSharing.enabled = payload.enabled or false
+    return newState
+end)
+
+-- SET_MAIN_CHARACTER: Set the player's designated main character
+HC.Store:RegisterReducer("SET_MAIN_CHARACTER", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.altSharing.mainCharacter = payload.mainCharacter -- "CharName-RealmName" or nil
+    return newState
+end)
+
+-- SET_LAST_BROADCAST: Update last broadcast timestamp
+HC.Store:RegisterReducer("SET_LAST_BROADCAST", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.altSharing.lastBroadcast = payload.timestamp or time()
+    return newState
+end)
+
+-- UPDATE_RECEIVED_MAPPING: Store received alt data from another player
+HC.Store:RegisterReducer("UPDATE_RECEIVED_MAPPING", function(state, payload)
+    if not payload.mainCharacter then return state end
+    local newState = DeepCopy(state)
+    newState.altSharing.receivedMappings[payload.mainCharacter] = {
+        alts = payload.alts or {},
+        initiativeId = payload.initiativeId,
+    }
+    return newState
+end)
+
+-- SET_GROUPING_MODE: Toggle leaderboard grouping mode
+HC.Store:RegisterReducer("SET_GROUPING_MODE", function(state, payload)
+    local newState = DeepCopy(state)
+    newState.altSharing.groupingMode = payload.mode or "individual"
+    return newState
+end)
+
+-- CLEAR_STALE_MAPPINGS: Remove mappings from ended initiatives
+HC.Store:RegisterReducer("CLEAR_STALE_MAPPINGS", function(state, payload)
+    local activeInitiativeId = payload.activeInitiativeId
+    if not activeInitiativeId then return state end
+    local newState = DeepCopy(state)
+    for mainChar, data in pairs(newState.altSharing.receivedMappings) do
+        if data.initiativeId ~= activeInitiativeId then
+            newState.altSharing.receivedMappings[mainChar] = nil
+        end
+    end
+    return newState
+end)
